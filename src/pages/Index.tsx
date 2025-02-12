@@ -15,10 +15,11 @@ const Index = () => {
       const formData = new FormData();
       formData.append('audio', audioBlob);
 
-      // Here you would typically send the audio to your API
-      // For now, we'll just simulate a response after a delay
+      // For testing purposes, we'll set some actual transcribed text
+      // Replace this with your actual API call when ready
       await new Promise(resolve => setTimeout(resolve, 1000));
-      setTranscription("This is where the transcribed text will appear...");
+      const mockTranscription = "This is a test transcription. Your audio was recorded successfully. When you integrate with a real API, the actual transcribed text will appear here.";
+      setTranscription(mockTranscription);
     } catch (error) {
       console.error('Error processing audio:', error);
       setTranscription("Error processing audio. Please try again.");
