@@ -1,49 +1,59 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AudioRecorderProps {
-  onRecordingComplete: (audioBlob: Blob) => void;
+  onRecordingComplete: (text: string) => void;
   isProcessing: boolean;
 }
 
 export const AudioRecorder = ({ onRecordingComplete, isProcessing }: AudioRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
+  useEffect(() => {
+    // Initialize speech recognition
+    if (window.SpeechRecognition || (window as any).webkitSpeechRecognition) {
+      const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event) => {
+        const current = event.resultIndex;
+        const transcript = event.results[current][0].transcript;
+        
+        if (event.results[current].isFinal) {
+          onRecordingComplete(transcript);
         }
       };
 
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        onRecordingComplete(audioBlob);
-        chunksRef.current = [];
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
       };
+    }
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [onRecordingComplete]);
+
+  const startRecording = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.start();
       setIsRecording(true);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
+    } else {
+      console.error('Speech recognition is not supported in this browser');
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
       setIsRecording(false);
     }
   };

@@ -7,25 +7,8 @@ const Index = () => {
   const [transcription, setTranscription] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleRecordingComplete = async (audioBlob: Blob) => {
-    setIsProcessing(true);
-    
-    try {
-      // Create form data with the audio blob
-      const formData = new FormData();
-      formData.append('audio', audioBlob);
-
-      // For testing purposes, we'll set some actual transcribed text
-      // Replace this with your actual API call when ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockTranscription = "This is a test transcription. Your audio was recorded successfully. When you integrate with a real API, the actual transcribed text will appear here.";
-      setTranscription(mockTranscription);
-    } catch (error) {
-      console.error('Error processing audio:', error);
-      setTranscription("Error processing audio. Please try again.");
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleRecordingComplete = (text: string) => {
+    setTranscription(text);
   };
 
   return (
