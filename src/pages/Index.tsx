@@ -6,9 +6,48 @@ import { cn } from "@/lib/utils";
 const Index = () => {
   const [transcription, setTranscription] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [apiResponse, setApiResponse] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const processTranscription = async (text: string) => {
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from server');
+      }
+
+      const data = await response.json();
+      console.log("data type: ", typeof data)
+      // console.log('API Response:', data); // Debug log
+      if (typeof data === 'string') {
+        setApiResponse(data);
+      } else if (data.response) {
+        setApiResponse(data.response);
+      } else {
+        throw new Error('Unexpected response format from server');
+      }
+    } catch (err) {
+      setError('Error communicating with the server. Please try again.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRecordingComplete = (text: string) => {
     setTranscription(text);
+    processTranscription(text);
   };
 
   return (
@@ -22,13 +61,18 @@ const Index = () => {
           <p className="text-gray-700 text-lg leading-relaxed">
             {isProcessing ? (
               <span className="animate-pulse">Processing audio...</span>
+            ) : isLoading ? (
+              <span className="animate-pulse">Getting response...</span>
+            ) : error ? (
+              <span className="text-red-500">{error}</span>
+            ) : apiResponse ? (
+              apiResponse
             ) : (
-              transcription || "Click the microphone button below to start recording..."
+              "Click the microphone button below to start recording..."
             )}
           </p>
         </div>
 
-        {/* Audio Recorder */}
         <AudioRecorder 
           onRecordingComplete={handleRecordingComplete}
           isProcessing={isProcessing}
